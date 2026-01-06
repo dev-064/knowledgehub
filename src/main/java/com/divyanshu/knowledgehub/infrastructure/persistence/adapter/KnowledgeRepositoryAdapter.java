@@ -4,9 +4,12 @@ import com.divyanshu.knowledgehub.application.port.out.KnowledgeRepository;
 import com.divyanshu.knowledgehub.domain.model.KnowledgeSource;
 import com.divyanshu.knowledgehub.infrastructure.persistence.entity.KnowledgeSourceEntity;
 import com.divyanshu.knowledgehub.infrastructure.persistence.repository.JpaKnowledgeRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,19 +34,26 @@ public class KnowledgeRepositoryAdapter implements KnowledgeRepository {
 
         KnowledgeSourceEntity saved = jpaRepository.save(entity);
 
-        return new KnowledgeSource(
-                saved.getId(),
-                saved.getType(),
-                saved.getContent(),
-                saved.getSourceUrl(),
-                saved.getCreatedAt()
-        );
+        return mapToDomain(saved);
     }
 
     @Override
-    public KnowledgeSource get(UUID id) {
-        Optional<KnowledgeSourceEntity> entity = jpaRepository.findById(id);
-        return entity.get();
+    public Optional<KnowledgeSource>  get(UUID id) {
+        return jpaRepository.findById(id).map(this::mapToDomain);
     }
 
+    @Override
+    public Page<KnowledgeSource> getAll(Pageable pageable) {
+        return jpaRepository.findAll(pageable).map(this::mapToDomain);
+    }
+
+    private KnowledgeSource mapToDomain(KnowledgeSourceEntity entity) {
+        return new KnowledgeSource(
+                entity.getId(),
+                entity.getType(),
+                entity.getContent(),
+                entity.getSourceUrl(),
+                entity.getCreatedAt()
+        );
+    }
 }

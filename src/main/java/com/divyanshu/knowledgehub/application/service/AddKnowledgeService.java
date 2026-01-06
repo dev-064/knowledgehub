@@ -25,15 +25,4 @@ public class AddKnowledgeService implements AddKnowledgeUseCase {
             throw new KnowledgePersistenceException("Failed to persist source", e);
         }
     }
-
-    @Override
-    public KnowledgeSource get(UUID id) {
-
-    }
-
-    @Override
-    public KnowledgeSource get(Integer page) {
-
-    }
-
 }
