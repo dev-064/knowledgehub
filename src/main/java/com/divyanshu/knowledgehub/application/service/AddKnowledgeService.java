@@ -3,18 +3,19 @@ package com.divyanshu.knowledgehub.application.service;
 import com.divyanshu.knowledgehub.application.AddKnowledgeUseCase;
 import com.divyanshu.knowledgehub.application.exception.KnowledgePersistenceException;
 import com.divyanshu.knowledgehub.application.port.out.KnowledgeRepository;
+import com.divyanshu.knowledgehub.application.port.out.UrlContentFetcher;
 import com.divyanshu.knowledgehub.domain.model.KnowledgeSource;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 public class AddKnowledgeService implements AddKnowledgeUseCase {
 
     private final KnowledgeRepository knowledgeRepository;
+    private final UrlContentFetcher urlContentFetcher;
 
-    public AddKnowledgeService(KnowledgeRepository knowledgeRepository) {
+    public AddKnowledgeService(KnowledgeRepository knowledgeRepository, UrlContentFetcher urlContentFetcher) {
         this.knowledgeRepository = knowledgeRepository;
+        this.urlContentFetcher = urlContentFetcher;
     }
 
     @Override
@@ -23,7 +24,8 @@ public class AddKnowledgeService implements AddKnowledgeUseCase {
             KnowledgeSource processedSource = switch (source.getType()) {
                 case TEXT -> source;
                 case LINK -> {
-                    String content = knowledgeRepository.fetchUrlContent(source.getSourceUrl());
+                    String content = urlContentFetcher.fetchUrlContent(source.getSourceUrl());
+
                     yield new KnowledgeSource(
                         source.getId(),
                         source.getType(),

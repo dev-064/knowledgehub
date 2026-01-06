@@ -14,6 +14,5 @@ public interface KnowledgeRepository {
 
     Page<KnowledgeSource> getAll(Pageable pageable);
 
-    String fetchUrlContent(String sourceUrl);
 }
 
