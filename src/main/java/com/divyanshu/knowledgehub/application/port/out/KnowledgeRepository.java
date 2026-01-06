@@ -13,5 +13,7 @@ public interface KnowledgeRepository {
     Optional<KnowledgeSource> get(UUID id);
 
     Page<KnowledgeSource> getAll(Pageable pageable);
+
+    String fetchUrlContent(String sourceUrl);
 }
 

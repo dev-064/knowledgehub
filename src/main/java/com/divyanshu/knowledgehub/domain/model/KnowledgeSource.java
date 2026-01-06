@@ -32,6 +32,10 @@ public class KnowledgeSource {
             throw new InvalidKnowledgeException("LINK must have a valid sourceUrl");
         }
 
+        if (content == null || content.isBlank()) {
+            throw new InvalidKnowledgeException("Content should not be null or an empty string");
+        }
+
         if (createdAt == null) {
             throw new InvalidKnowledgeException("createdAt must not be null");
         }

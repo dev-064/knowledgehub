@@ -20,7 +20,21 @@ public class AddKnowledgeService implements AddKnowledgeUseCase {
     @Override
     public KnowledgeSource add(KnowledgeSource source) {
         try{
-            return knowledgeRepository.save(source);
+            KnowledgeSource processedSource = switch (source.getType()) {
+                case TEXT -> source;
+                case LINK -> {
+                    String content = knowledgeRepository.fetchUrlContent(source.getSourceUrl());
+                    yield new KnowledgeSource(
+                        source.getId(),
+                        source.getType(),
+                        content,
+                        source.getSourceUrl(),
+                        source.getCreatedAt()
+                    );
+                }
+            };
+
+            return knowledgeRepository.save(processedSource);
         } catch (Exception e) {
             throw new KnowledgePersistenceException("Failed to persist source", e);
         }
