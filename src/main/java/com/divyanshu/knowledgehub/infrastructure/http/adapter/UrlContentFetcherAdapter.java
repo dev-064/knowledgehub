@@ -13,6 +13,7 @@ public class UrlContentFetcherAdapter implements UrlContentFetcher {
     public UrlContentFetcherAdapter(@Qualifier("httpRestTemplate") RestTemplate httpRestTemplate) {
         this.httpRestTemplate = httpRestTemplate;
     }
+
     public String fetchUrlContent(String sourceUrl){
         return httpRestTemplate.getForObject(sourceUrl,String.class);
     }

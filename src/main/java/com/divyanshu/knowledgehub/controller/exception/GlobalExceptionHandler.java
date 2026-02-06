@@ -4,6 +4,8 @@ import com.divyanshu.knowledgehub.application.exception.ApplicationException;
 import com.divyanshu.knowledgehub.application.exception.KnowledgeNotFoundException;
 import com.divyanshu.knowledgehub.domain.exception.DomainException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,11 +15,14 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ErrorResponse> handleDomainException(
             DomainException ex,
             HttpServletRequest request
     ) {
+        log.warn("Domain validation error: {} path={}", ex.getMessage(), request.getRequestURI(),ex);
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "DOMAIN_VALIDATION_ERROR",
@@ -33,6 +38,7 @@ public class GlobalExceptionHandler {
             ApplicationException ex,
             HttpServletRequest request
     ) {
+        log.error("Application error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "APPLICATION_ERROR",
@@ -48,6 +54,7 @@ public class GlobalExceptionHandler {
             KnowledgeNotFoundException ex,
             HttpServletRequest request
     ) {
+        log.warn("Knowledge not found error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 "KNOWLEDGE_NOT_FOUND",
@@ -63,6 +70,7 @@ public class GlobalExceptionHandler {
             MethodArgumentTypeMismatchException ex,
             HttpServletRequest request
     ) {
+        log.warn("Invalid request parameters: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
         String message = String.format(
                 "Invalid value '%s' for parameter '%s'",
                 ex.getValue(),
@@ -85,6 +93,7 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
+        log.error("Unexpected error path={}", ex.getMessage(), ex);
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "UNEXPECTED_ERROR",
