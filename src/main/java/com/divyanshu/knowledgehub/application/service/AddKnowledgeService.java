@@ -5,6 +5,7 @@ import com.divyanshu.knowledgehub.application.exception.KnowledgePersistenceExce
 import com.divyanshu.knowledgehub.application.port.out.KnowledgeRepository;
 import com.divyanshu.knowledgehub.application.port.out.UrlContentFetcher;
 import com.divyanshu.knowledgehub.domain.model.KnowledgeSource;
+import com.divyanshu.knowledgehub.infrastructure.model.FetchedResource;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
@@ -30,12 +31,12 @@ public class AddKnowledgeService implements AddKnowledgeUseCase {
                 case TEXT -> source;
                 case LINK -> {
                     log.debug("Fetching content from URL: {}", source.getSourceUrl());
-                    String content = urlContentFetcher.fetchUrlContent(source.getSourceUrl());
+                    FetchedResource content = urlContentFetcher.fetchUrlContent(source.getSourceUrl());
 
                     yield new KnowledgeSource(
                         source.getId(),
                         source.getType(),
-                        content,
+                        content.toString(),
                         source.getSourceUrl(),
                         source.getCreatedAt()
                     );

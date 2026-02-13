@@ -39,30 +39,24 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         log.error("Application error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
-        ErrorResponse response = new ErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "APPLICATION_ERROR",
-                ex.getMessage(),
-                request.getRequestURI()
-        );
+        ErrorResponse response;
+        if(ex.getClass() == KnowledgeNotFoundException.class) {
+            response = new ErrorResponse(
+                    HttpStatus.NOT_FOUND.value(),
+                    "KNOWLEDGE_NOT_FOUND",
+                    ex.getMessage(),
+                    request.getRequestURI()
+            );
+        } else {
+            response = new ErrorResponse(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "APPLICATION_ERROR",
+                    ex.getMessage(),
+                    request.getRequestURI()
+            );
+        }
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
-
-    @ExceptionHandler(KnowledgeNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleKnowledgeNotFoundException(
-            KnowledgeNotFoundException ex,
-            HttpServletRequest request
-    ) {
-        log.warn("Knowledge not found error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
-        ErrorResponse response = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "KNOWLEDGE_NOT_FOUND",
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        return ResponseEntity.status(response.getStatus()).body(response);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

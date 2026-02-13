@@ -9,8 +9,6 @@ public class KnowledgeNotFoundException extends ApplicationException{
     }
 
     public KnowledgeNotFoundException(UUID id){
-        super("knowledge with id" + id + "not found");
+        super("knowledge with id " + id + " not found");
     }
 }
-
-
