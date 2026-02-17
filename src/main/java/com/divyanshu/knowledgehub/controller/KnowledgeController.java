@@ -40,7 +40,7 @@ public class KnowledgeController {
         KnowledgeSource source = new KnowledgeSource(
                 UUID.randomUUID(),
                 request.getType(),
-                "request.getContent()",
+                request.getContent(),
                 request.getSourceUrl(),
                 Instant.now()
         );
