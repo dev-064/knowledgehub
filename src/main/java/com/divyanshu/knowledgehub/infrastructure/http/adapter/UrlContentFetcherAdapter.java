@@ -2,12 +2,16 @@ package com.divyanshu.knowledgehub.infrastructure.http.adapter;
 
 import com.divyanshu.knowledgehub.application.port.out.UrlContentFetcher;
 import com.divyanshu.knowledgehub.infrastructure.model.FetchedResource;
-import org.hibernate.mapping.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Map;
 
 @Component
 public class UrlContentFetcherAdapter implements UrlContentFetcher {
@@ -21,8 +25,21 @@ public class UrlContentFetcherAdapter implements UrlContentFetcher {
     }
 
     public FetchedResource fetchUrlContent(String sourceUrl){
-        String f =  httpRestTemplate.getForObject(sourceUrl,String.class);
-        log.info("Fetched resource f= {}", f.toString());
-        return new FetchedResource(new byte[],"xyz",new Map(),);
+        ResponseEntity<byte[]> response = httpRestTemplate.exchange(
+                sourceUrl,
+                HttpMethod.GET,
+                HttpEntity.EMPTY,
+                byte[].class
+        );
+        byte[] body = response.getBody();
+        String contentType = response.getHeaders().getContentType() != null
+                ? response.getHeaders().getContentType().toString() : "unknown";
+        Map<String, String> headers = response.getHeaders().toSingleValueMap();
+        return new FetchedResource(
+                body,
+                contentType,
+                headers,
+                sourceUrl
+        );
     }
 }

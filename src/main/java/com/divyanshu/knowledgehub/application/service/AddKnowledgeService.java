@@ -3,6 +3,7 @@ package com.divyanshu.knowledgehub.application.service;
 import com.divyanshu.knowledgehub.application.AddKnowledgeUseCase;
 import com.divyanshu.knowledgehub.application.exception.KnowledgePersistenceException;
 import com.divyanshu.knowledgehub.application.port.out.KnowledgeRepository;
+import com.divyanshu.knowledgehub.application.port.out.Parser;
 import com.divyanshu.knowledgehub.application.port.out.UrlContentFetcher;
 import com.divyanshu.knowledgehub.domain.model.KnowledgeSource;
 import com.divyanshu.knowledgehub.infrastructure.model.FetchedResource;
@@ -17,10 +18,12 @@ public class AddKnowledgeService implements AddKnowledgeUseCase {
 
     private final KnowledgeRepository knowledgeRepository;
     private final UrlContentFetcher urlContentFetcher;
+    private final Parser parser;
 
-    public AddKnowledgeService(KnowledgeRepository knowledgeRepository, UrlContentFetcher urlContentFetcher) {
+    public AddKnowledgeService(KnowledgeRepository knowledgeRepository, UrlContentFetcher urlContentFetcher, Parser parser) {
         this.knowledgeRepository = knowledgeRepository;
         this.urlContentFetcher = urlContentFetcher;
+        this.parser = parser;
     }
 
     @Override
@@ -32,11 +35,12 @@ public class AddKnowledgeService implements AddKnowledgeUseCase {
                 case LINK -> {
                     log.debug("Fetching content from URL: {}", source.getSourceUrl());
                     FetchedResource content = urlContentFetcher.fetchUrlContent(source.getSourceUrl());
+                    String parsedContent = parser.parse(content);
 
                     yield new KnowledgeSource(
                         source.getId(),
                         source.getType(),
-                        content.toString(),
+                        parsedContent,
                         source.getSourceUrl(),
                         source.getCreatedAt()
                     );
