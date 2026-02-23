@@ -3,7 +3,7 @@ package com.divyanshu.knowledgehub.domain.model;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.divyanshu.knowledgehub.domain.exception.InvalidKnowledgeException;
+import com.divyanshu.knowledgehub.domain.exception.InvalidDataException;
 
 public class KnowledgeSource {
 
@@ -21,23 +21,23 @@ public class KnowledgeSource {
             Instant createdAt
     ) {
         if (id == null) {
-            throw new InvalidKnowledgeException("Knowledge id must not be null");
+            throw new InvalidDataException("Knowledge id must not be null");
         }
 
         if (type == null) {
-            throw new InvalidKnowledgeException("Source type must not be null");
+            throw new InvalidDataException("Source type must not be null");
         }
 
         if (type == SourceType.LINK && (sourceUrl == null || sourceUrl.isBlank())) {
-            throw new InvalidKnowledgeException("LINK must have a valid sourceUrl");
+            throw new InvalidDataException("LINK must have a valid sourceUrl");
         }
 
         if (content == null || content.isBlank()) {
-            throw new InvalidKnowledgeException("Content should not be null or an empty string");
+            throw new InvalidDataException("Content should not be null or an empty string");
         }
 
         if (createdAt == null) {
-            throw new InvalidKnowledgeException("createdAt must not be null");
+            throw new InvalidDataException("createdAt must not be null");
         }
 
         this.id = id;
