@@ -10,6 +10,7 @@ public class User {
     private final UUID id;
     private final String name;
     private final String email;
+    private final String password;
     private final List<Workspace> workspaces;
     private final Instant created_at;
     private final Instant updated_at;
@@ -18,6 +19,7 @@ public class User {
             UUID id,
             String name,
             String email,
+            String password,
             List<Workspace> workspaces,
             Instant created_at,
             Instant updated_at
@@ -35,9 +37,14 @@ public class User {
             throw new InvalidDataException("Email must not be null");
         }
 
+        if (password == null) {
+            throw new InvalidDataException("Password must not be null");
+        }
+
         this.id = id;
         this.name = name;
         this.email = email;
+        this.password = password;
         this.workspaces = workspaces;
         this.created_at = created_at;
         this.updated_at = updated_at;
@@ -53,6 +60,10 @@ public class User {
 
     public String getEmail() {
         return this.email;
+    }
+
+    public String getPassword() {
+        return this.password;
     }
 
     public List<Workspace> getWorkspaces() {

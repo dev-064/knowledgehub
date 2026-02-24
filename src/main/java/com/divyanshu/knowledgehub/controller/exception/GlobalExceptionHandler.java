@@ -1,7 +1,6 @@
 package com.divyanshu.knowledgehub.controller.exception;
 
 import com.divyanshu.knowledgehub.application.exception.ApplicationException;
-import com.divyanshu.knowledgehub.application.exception.KnowledgeNotFoundException;
 import com.divyanshu.knowledgehub.domain.exception.DomainException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -40,21 +39,12 @@ public class GlobalExceptionHandler {
     ) {
         log.error("Application error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
         ErrorResponse response;
-        if(ex.getClass() == KnowledgeNotFoundException.class) {
-            response = new ErrorResponse(
-                    HttpStatus.NOT_FOUND.value(),
-                    "KNOWLEDGE_NOT_FOUND",
-                    ex.getMessage(),
-                    request.getRequestURI()
-            );
-        } else {
-            response = new ErrorResponse(
-                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                    "APPLICATION_ERROR",
-                    ex.getMessage(),
-                    request.getRequestURI()
-            );
-        }
+        response = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "APPLICATION_ERROR",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
 
         return ResponseEntity.status(response.getStatus()).body(response);
     }
