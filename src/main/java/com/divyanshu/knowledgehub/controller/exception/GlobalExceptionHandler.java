@@ -1,27 +1,52 @@
 package com.divyanshu.knowledgehub.controller.exception;
 
 import com.divyanshu.knowledgehub.application.exception.ApplicationException;
+import com.divyanshu.knowledgehub.application.exception.UserAlreadyExistsException;
 import com.divyanshu.knowledgehub.domain.exception.DomainException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+
+        log.warn("Request validation failed: {} path={}", message, request.getRequestURI());
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "VALIDATION_ERROR",
+                message,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.badRequest().body(response);
+    }
+
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ErrorResponse> handleDomainException(
             DomainException ex,
             HttpServletRequest request
     ) {
-        log.warn("Domain validation error: {} path={}", ex.getMessage(), request.getRequestURI(),ex);
+        log.warn("Domain validation error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "DOMAIN_VALIDATION_ERROR",
@@ -37,9 +62,19 @@ public class GlobalExceptionHandler {
             ApplicationException ex,
             HttpServletRequest request
     ) {
+        if (ex instanceof UserAlreadyExistsException) {
+            log.warn("User registration conflict: {} path={}", ex.getMessage(), request.getRequestURI());
+            ErrorResponse response = new ErrorResponse(
+                    HttpStatus.CONFLICT.value(),
+                    "USER_ALREADY_EXISTS",
+                    ex.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        }
+
         log.error("Application error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
-        ErrorResponse response;
-        response = new ErrorResponse(
+        ErrorResponse response = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "APPLICATION_ERROR",
                 ex.getMessage(),
@@ -70,7 +105,6 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(response);
     }
-
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException(

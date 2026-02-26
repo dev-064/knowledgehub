@@ -1,5 +1,6 @@
 package com.divyanshu.knowledgehub.application.service;
 
+import com.divyanshu.knowledgehub.application.exception.UserAlreadyExistsException;
 import com.divyanshu.knowledgehub.application.port.out.UserRepository;
 import com.divyanshu.knowledgehub.domain.model.User;
 import org.slf4j.Logger;
@@ -33,8 +34,23 @@ public class UserService {
                 user.getUpdatedAt()
         );
 
-        User savedUser = userRepository.save(encryptedUser);
-        return jwtService.generateToken(savedUser);
+        try {
+            User savedUser = userRepository.save(encryptedUser);
+            return jwtService.generateToken(savedUser);
+        } catch (UserAlreadyExistsException e) {
+            log.warn("Registration failed — user already exists: {}", user.getEmail());
+            throw e;
+        }
+    }
+
+    public String loginUser(String email, String password) {
+        try {
+            String hashedPassword = hashPassword(password);
+
+        } catch (UserAlreadyExistsException e) {
+            log.warn("Registration failed — user already exists: {}", user.getEmail());
+            throw e;
+        }
     }
 
     private String hashPassword(String rawPassword) {

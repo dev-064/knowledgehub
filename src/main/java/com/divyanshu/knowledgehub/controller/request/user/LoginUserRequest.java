@@ -3,10 +3,7 @@ package com.divyanshu.knowledgehub.controller.request.user;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-public class RegisterUserRequest {
-
-    @NotBlank(message = "Name must not be blank")
-    private final String name;
+public class LoginUserRequest {
 
     @NotBlank(message = "Email must not be blank")
     @Email(message = "Email must be a valid email address")
@@ -15,14 +12,9 @@ public class RegisterUserRequest {
     @NotBlank(message = "Password must not be blank")
     private final String password;
 
-    public RegisterUserRequest(String name, String email, String password) {
-        this.name = name;
+    public LoginUserRequest(String email, String password) {
         this.email = email;
         this.password = password;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public String getEmail() {
