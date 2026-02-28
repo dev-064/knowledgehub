@@ -1,12 +1,16 @@
 package com.divyanshu.knowledgehub.application.service;
 
-import com.divyanshu.knowledgehub.application.exception.UserAlreadyExistsException;
+import com.divyanshu.knowledgehub.application.exception.*;
 import com.divyanshu.knowledgehub.application.port.out.UserRepository;
 import com.divyanshu.knowledgehub.domain.model.User;
+import com.divyanshu.knowledgehub.infrastructure.persistence.exception.DatabaseException;
+import com.divyanshu.knowledgehub.infrastructure.persistence.exception.DuplicateEntityException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -29,7 +33,6 @@ public class UserService {
                 user.getName(),
                 user.getEmail(),
                 hashedPassword,
-                user.getWorkspaces(),
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );
@@ -37,19 +40,39 @@ public class UserService {
         try {
             User savedUser = userRepository.save(encryptedUser);
             return jwtService.generateToken(savedUser);
-        } catch (UserAlreadyExistsException e) {
-            log.warn("Registration failed — user already exists: {}", user.getEmail());
-            throw e;
+        } catch (DuplicateEntityException e) {
+            log.warn("Registration failed - user already exists: {}", user.getEmail());
+            throw new UserAlreadyExistsException(user.getEmail());
+        } catch (DatabaseException e) {
+            log.error("Registration failed - database error for user: {}", user.getEmail(), e);
+            throw new UserPersistenceException(user.getEmail());
         }
     }
 
     public String loginUser(String email, String password) {
         try {
-            String hashedPassword = hashPassword(password);
+            User user = userRepository.getUser(email).orElseThrow(() -> {
+                return new UserNotFoundException(email);
+            });
+            if (passwordMatches(password, user.getPassword())) {
+                return jwtService.generateToken(user);
+            }
+            throw new InvalidCredentialsException();
+        } catch (DatabaseException e) {
+            log.error("Login failed - database error for user: {}", email, e);
+            throw new FetchUserException(email);
+        }
+    }
 
-        } catch (UserAlreadyExistsException e) {
-            log.warn("Registration failed — user already exists: {}", user.getEmail());
-            throw e;
+    public User getUser(UUID id) {
+        try {
+            User user = userRepository.getUser(id).orElseThrow(() -> {
+                return new UserNotFoundException(id);
+            });
+            return user;
+        } catch (DatabaseException e) {
+            log.error("Login failed - database error for user: {}", id, e);
+            throw new FetchUserException(id);
         }
     }
 

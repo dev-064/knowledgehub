@@ -11,7 +11,6 @@ public class User {
     private final String name;
     private final String email;
     private final String password;
-    private final List<Workspace> workspaces;
     private final Instant created_at;
     private final Instant updated_at;
 
@@ -20,7 +19,6 @@ public class User {
             String name,
             String email,
             String password,
-            List<Workspace> workspaces,
             Instant created_at,
             Instant updated_at
     ) {
@@ -45,7 +43,6 @@ public class User {
         this.name = name;
         this.email = email;
         this.password = password;
-        this.workspaces = workspaces;
         this.created_at = created_at;
         this.updated_at = updated_at;
     }
@@ -64,10 +61,6 @@ public class User {
 
     public String getPassword() {
         return this.password;
-    }
-
-    public List<Workspace> getWorkspaces() {
-        return this.workspaces;
     }
 
     public Instant getCreatedAt() {

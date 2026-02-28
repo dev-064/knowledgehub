@@ -1,7 +1,9 @@
 package com.divyanshu.knowledgehub.controller.exception;
 
 import com.divyanshu.knowledgehub.application.exception.ApplicationException;
+import com.divyanshu.knowledgehub.application.exception.InvalidCredentialsException;
 import com.divyanshu.knowledgehub.application.exception.UserAlreadyExistsException;
+import com.divyanshu.knowledgehub.application.exception.UserNotFoundException;
 import com.divyanshu.knowledgehub.domain.exception.DomainException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -57,22 +59,56 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFoundException(
+            UserNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("User not found: {} path={}", ex.getMessage(), request.getRequestURI());
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                "USER_NOT_FOUND",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleUserAlreadyExistsException(
+            UserAlreadyExistsException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Conflict - user already exists: {} path={}", ex.getMessage(), request.getRequestURI());
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "USER_ALREADY_EXISTS",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(
+            InvalidCredentialsException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Invalid login attempt path={}", request.getRequestURI());
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.UNAUTHORIZED.value(),
+                "INVALID_CREDENTIALS",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
     @ExceptionHandler(ApplicationException.class)
     public ResponseEntity<ErrorResponse> handleApplicationException(
             ApplicationException ex,
             HttpServletRequest request
     ) {
-        if (ex instanceof UserAlreadyExistsException) {
-            log.warn("User registration conflict: {} path={}", ex.getMessage(), request.getRequestURI());
-            ErrorResponse response = new ErrorResponse(
-                    HttpStatus.CONFLICT.value(),
-                    "USER_ALREADY_EXISTS",
-                    ex.getMessage(),
-                    request.getRequestURI()
-            );
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-        }
-
         log.error("Application error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),

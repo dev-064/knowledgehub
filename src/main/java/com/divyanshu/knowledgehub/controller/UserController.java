@@ -3,12 +3,11 @@ package com.divyanshu.knowledgehub.controller;
 import com.divyanshu.knowledgehub.application.service.UserService;
 import com.divyanshu.knowledgehub.controller.request.user.LoginUserRequest;
 import com.divyanshu.knowledgehub.controller.request.user.RegisterUserRequest;
+import com.divyanshu.knowledgehub.controller.response.user.UserResponse;
 import com.divyanshu.knowledgehub.domain.model.User;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -33,7 +32,6 @@ public class UserController {
                 request.getName(),
                 request.getEmail(),
                 request.getPassword(),
-                null,
                 Instant.now(),
                 Instant.now()
         );
@@ -45,9 +43,12 @@ public class UserController {
 
     @PostMapping("login")
     public String login(@Valid @RequestBody LoginUserRequest request) {
+        return userService.loginUser(request.getEmail(), request.getPassword());
+    }
 
-
-        String jwtToken = userService.registerUser(newUser);
-        return jwtToken;
+    @GetMapping
+    public UserResponse get(HttpServletRequest request) {
+        UUID userId = (UUID) request.getAttribute("userId");
+        return UserResponse.from(userService.getUser(userId));
     }
 }

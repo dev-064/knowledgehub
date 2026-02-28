@@ -22,9 +22,6 @@ public class UserEntity {
     @Column(nullable = false)
     private String password;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    private List<WorkspaceEntity> workspaces;
-
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -63,10 +60,6 @@ public class UserEntity {
 
     public String getPassword() {
         return password;
-    }
-
-    public List<WorkspaceEntity> getWorkspaces() {
-        return workspaces;
     }
 
     public Instant getCreatedAt() {
