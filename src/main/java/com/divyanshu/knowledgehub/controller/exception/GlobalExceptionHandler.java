@@ -4,6 +4,9 @@ import com.divyanshu.knowledgehub.application.exception.ApplicationException;
 import com.divyanshu.knowledgehub.application.exception.InvalidCredentialsException;
 import com.divyanshu.knowledgehub.application.exception.UserAlreadyExistsException;
 import com.divyanshu.knowledgehub.application.exception.UserNotFoundException;
+import com.divyanshu.knowledgehub.application.exception.WorkspaceAlreadyExistsException;
+import com.divyanshu.knowledgehub.application.exception.WorkspaceNotFoundException;
+import com.divyanshu.knowledgehub.application.exception.WorkspacePersistenceException;
 import com.divyanshu.knowledgehub.domain.exception.DomainException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -102,6 +105,51 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    @ExceptionHandler(WorkspaceAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleWorkspaceAlreadyExistsException(
+            WorkspaceAlreadyExistsException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Conflict - workspace already exists: {} path={}", ex.getMessage(), request.getRequestURI());
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "WORKSPACE_ALREADY_EXISTS",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(WorkspaceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleWorkspaceNotFoundException(
+            WorkspaceNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Workspace not found: {} path={}", ex.getMessage(), request.getRequestURI());
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                "WORKSPACE_NOT_FOUND",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(WorkspacePersistenceException.class)
+    public ResponseEntity<ErrorResponse> handleWorkspacePersistenceException(
+            WorkspacePersistenceException ex,
+            HttpServletRequest request
+    ) {
+        log.error("Workspace persistence error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "WORKSPACE_PERSISTENCE_ERROR",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     @ExceptionHandler(ApplicationException.class)

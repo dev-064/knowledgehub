@@ -8,21 +8,26 @@ import java.util.UUID;
 
 public class Workspace {
     private final UUID id;
+    private final UUID userId;
     private final String name;
     private final List<Document> documents;
     private final Instant created_at;
     private final Instant updated_at;
 
-    public Workspace (
+    public Workspace(
             UUID id,
+            UUID userId,
             String name,
             List<Document> documents,
             Instant created_at,
             Instant updated_at
     ) {
-
         if (id == null) {
             throw new InvalidDataException("Workspace id must not be null");
+        }
+
+        if (userId == null) {
+            throw new InvalidDataException("Workspace userId must not be null");
         }
 
         if (name == null) {
@@ -30,6 +35,7 @@ public class Workspace {
         }
 
         this.id = id;
+        this.userId = userId;
         this.name = name;
         this.documents = documents;
         this.created_at = created_at;
@@ -38,6 +44,10 @@ public class Workspace {
 
     public UUID getId() {
         return this.id;
+    }
+
+    public UUID getUserId() {
+        return this.userId;
     }
 
     public String getName() {
