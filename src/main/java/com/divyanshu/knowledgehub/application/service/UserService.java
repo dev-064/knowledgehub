@@ -51,9 +51,7 @@ public class UserService {
 
     public String loginUser(String email, String password) {
         try {
-            User user = userRepository.getUser(email).orElseThrow(() -> {
-                return new UserNotFoundException(email);
-            });
+            User user = userRepository.getUser(email).orElseThrow(() -> new UserNotFoundException(email));
             if (passwordMatches(password, user.getPassword())) {
                 return jwtService.generateToken(user);
             }
@@ -66,10 +64,7 @@ public class UserService {
 
     public User getUser(UUID id) {
         try {
-            User user = userRepository.getUser(id).orElseThrow(() -> {
-                return new UserNotFoundException(id);
-            });
-            return user;
+            return userRepository.getUser(id).orElseThrow(() -> new UserNotFoundException(id));
         } catch (DatabaseException e) {
             log.error("Login failed - database error for user: {}", id, e);
             throw new FetchUserException(id);

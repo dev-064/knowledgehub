@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public class Document {
     private final UUID id;
+    private final UUID workspaceId;
     private final String title;
     private final String source_url;
     private final DocumentType type;
@@ -20,19 +21,24 @@ public class Document {
 
     public Document(
             UUID id,
+            UUID workspaceId,
             String title,
             String source_url,
             DocumentType type,
             String content_hash,
             String uploaded_reference,
             DocumentUploadStatus status,
-            List<Chunks> chunks,
             Instant created_at,
-            Instant updated_at
+            Instant updated_at,
+            List<Chunks> chunks
     ) {
 
         if (id == null) {
             throw new InvalidDataException("Document id must not be null");
+        }
+
+        if (workspaceId == null) {
+            throw new InvalidDataException("Workspace id must not be null");
         }
 
         if (title == null) {
@@ -60,6 +66,7 @@ public class Document {
         }
 
         this.id = id;
+        this.workspaceId = workspaceId;
         this.title = title;
         this.source_url = source_url;
         this.type = type;
@@ -73,6 +80,10 @@ public class Document {
 
     public UUID getId() {
         return this.id;
+    }
+
+    public UUID getWorkspaceId() {
+        return this.workspaceId;
     }
 
     public String getSourceUrl() {

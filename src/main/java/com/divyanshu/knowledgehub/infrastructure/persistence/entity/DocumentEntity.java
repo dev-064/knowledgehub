@@ -104,6 +104,10 @@ public class DocumentEntity {
         return workspace;
     }
 
+    public UUID getWorkspaceId() {
+        return workspace != null ? workspace.getId() : null;
+    }
+
     public List<ChunksEntity> getChunks() {
         return chunks;
     }
