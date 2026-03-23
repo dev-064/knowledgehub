@@ -30,7 +30,7 @@ public class DataController {
                 UUID.randomUUID(),
                 workspaceId,
                 request.getTitle(),
-                null,
+                request.getSourceUrl(),
                 request.getDocumentType(),
                 null,
                 null,

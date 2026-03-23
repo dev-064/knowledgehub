@@ -1,14 +1,14 @@
 package com.divyanshu.knowledgehub.application.service;
 
 
-import com.divyanshu.knowledgehub.application.exception.UserNotFoundException;
-import com.divyanshu.knowledgehub.application.exception.WorkspaceNotFoundException;
+import com.divyanshu.knowledgehub.application.event.DocumentSavedEvent;
 import com.divyanshu.knowledgehub.application.port.out.DataRepository;
-import com.divyanshu.knowledgehub.application.port.out.UserRepository;
-import com.divyanshu.knowledgehub.application.port.out.WorkspaceRepository;
+import com.divyanshu.knowledgehub.application.port.out.Parser;
+import com.divyanshu.knowledgehub.application.port.out.UrlContentFetcher;
 import com.divyanshu.knowledgehub.domain.model.Document;
-import com.divyanshu.knowledgehub.domain.model.User;
-import com.divyanshu.knowledgehub.domain.model.Workspace;
+import com.divyanshu.knowledgehub.domain.model.DocumentType;
+import com.divyanshu.knowledgehub.infrastructure.model.FetchedResource;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -16,25 +16,36 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.UUID;
+import java.util.Objects;
 
 @Service
 public class DataService {
 
     private final DataRepository dataRepository;
-    private final WorkspaceRepository workspaceRepository;
-    private final UserRepository userRepository;
     private final ChunkingService chunkingService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final UrlContentFetcher urlContentFetcher;
+    private final Parser parser;
 
-    public DataService(DataRepository dataRepository, WorkspaceRepository workspaceRepository, UserRepository userRepository, ChunkingService chunkingService) {
+    public DataService(
+            DataRepository dataRepository,
+            ChunkingService chunkingService,
+            ApplicationEventPublisher eventPublisher,
+            UrlContentFetcher urlContentFetcher,
+            Parser parser
+    ) {
         this.dataRepository = dataRepository;
-        this.workspaceRepository = workspaceRepository;
-        this.userRepository = userRepository;
         this.chunkingService = chunkingService;
+        this.eventPublisher = eventPublisher;
+        this.urlContentFetcher = urlContentFetcher;
+        this.parser = parser;
     }
 
-    public Document saveData( String content, Document doc) {
-        Workspace workspace = workspaceRepository.get(doc.getWorkspaceId()).orElseThrow(() -> new WorkspaceNotFoundException(doc.getWorkspaceId()));
+    public Document saveData(String content, Document doc) {
+        if (Objects.requireNonNull(doc.getDocumentType()) == DocumentType.LINK) {
+            FetchedResource urlContent = urlContentFetcher.fetchUrlContent(doc.getSourceUrl());
+            content = parser.parse(urlContent);
+        }
         List<String> chunks = chunkingService.getChunks(content);
         String contentHash = hashContent(content);
         Document docToBeSaved = new Document(
@@ -50,7 +61,11 @@ public class DataService {
                 doc.getUpdatedAt(),
                 List.of()
         );
-        return dataRepository.save(docToBeSaved, chunks);
+        Document savedDoc = dataRepository.save(docToBeSaved, chunks);
+
+        eventPublisher.publishEvent(new DocumentSavedEvent(savedDoc.getId()));
+
+        return savedDoc;
     }
 
     private String hashContent(String content) {

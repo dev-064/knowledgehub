@@ -19,7 +19,7 @@ public class ChunksEntity {
 
     private Integer chunkIndex;
 
-    @Column(columnDefinition = "float4[]")
+    @Column(columnDefinition = "vector(768)")
     private float[] embeddingVector;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -84,5 +84,13 @@ public class ChunksEntity {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public void setEmbeddingVector(float[] embeddingVector) {
+        this.embeddingVector = embeddingVector;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

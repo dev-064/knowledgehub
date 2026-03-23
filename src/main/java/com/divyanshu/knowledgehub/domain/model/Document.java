@@ -57,11 +57,11 @@ public class Document {
             throw new InvalidDataException("Source Url cannot be null for Link document");
         }
 
-        if (content_hash == null) {
+        if (status != DocumentUploadStatus.PROCESSING && content_hash == null) {
             throw new InvalidDataException("content hash must not be null");
         }
 
-        if (chunks.isEmpty()) {
+        if (status != DocumentUploadStatus.PROCESSING && chunks.isEmpty()) {
             throw new InvalidDataException("chunk must not be empty");
         }
 

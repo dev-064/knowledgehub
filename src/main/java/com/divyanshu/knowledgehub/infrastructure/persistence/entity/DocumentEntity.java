@@ -18,15 +18,17 @@ public class DocumentEntity {
     @Column(nullable = false)
     private String title;
 
+    @Column(length = 2048)
     private String sourceUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DocumentType type;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true, length = 512)
     private String contentHash;
 
+    @Column(length = 1024)
     private String uploadedReference;
 
     @Enumerated(EnumType.STRING)
@@ -118,5 +120,13 @@ public class DocumentEntity {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public void setStatus(DocumentUploadStatus status) {
+        this.status = status;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

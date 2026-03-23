@@ -8,3 +8,12 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        hbm2ddl:
+          import_files: init.sql
+
+ollama:
+  base-url: http://localhost:11434
+  embedding:
+    model: nomic-embed-text

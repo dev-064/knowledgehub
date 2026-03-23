@@ -8,6 +8,9 @@ import com.divyanshu.knowledgehub.application.exception.WorkspaceAlreadyExistsEx
 import com.divyanshu.knowledgehub.application.exception.WorkspaceNotFoundException;
 import com.divyanshu.knowledgehub.application.exception.WorkspacePersistenceException;
 import com.divyanshu.knowledgehub.domain.exception.DomainException;
+import com.divyanshu.knowledgehub.infrastructure.persistence.exception.DatabaseException;
+import com.divyanshu.knowledgehub.infrastructure.persistence.exception.DuplicateEntityException;
+import com.divyanshu.knowledgehub.infrastructure.persistence.exception.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,6 +138,51 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(DuplicateEntityException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateEntityException(
+            DuplicateEntityException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Duplicate entity: {} path={}", ex.getMessage(), request.getRequestURI());
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "DOCUMENT_ALREADY_EXISTS",
+                "A document with the same content already exists in this workspace.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEntityNotFoundException(
+            EntityNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Entity not found: {} path={}", ex.getMessage(), request.getRequestURI());
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                "ENTITY_NOT_FOUND",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(DatabaseException.class)
+    public ResponseEntity<ErrorResponse> handleDatabaseException(
+            DatabaseException ex,
+            HttpServletRequest request
+    ) {
+        log.error("Database error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "DATABASE_ERROR",
+                "A database error occurred. Please try again later.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     @ExceptionHandler(WorkspacePersistenceException.class)
