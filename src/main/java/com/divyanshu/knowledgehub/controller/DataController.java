@@ -5,10 +5,12 @@ import com.divyanshu.knowledgehub.controller.request.data.SaveDataRequest;
 import com.divyanshu.knowledgehub.controller.response.data.SaveDataResponse;
 import com.divyanshu.knowledgehub.domain.model.Document;
 import com.divyanshu.knowledgehub.domain.model.DocumentUploadStatus;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +26,7 @@ public class DataController {
     }
 
     @PostMapping
-    public SaveDataResponse saveData(@Valid @RequestBody SaveDataRequest request, @RequestParam UUID workspaceId) {
+    public SaveDataResponse saveData(@Valid @RequestBody SaveDataRequest request, @RequestParam UUID workspaceId, @RequestPart MultipartFile file) throws IOException {
         String content = request.getContent();
         Document doc = new Document(
                 UUID.randomUUID(),
@@ -39,7 +41,7 @@ public class DataController {
                 Instant.now(),
                 List.of()
         );
-        Document savedDoc = dataService.saveData(content, doc);
+        Document savedDoc = dataService.saveData(content, doc, file);
         return new SaveDataResponse(
                 savedDoc.getId(),
                 savedDoc.getTitle(),

@@ -1,4 +1,4 @@
-package com.divyanshu.knowledgehub.infrastructure.parser.HtmlParser;
+package com.divyanshu.knowledgehub.infrastructure.parser;
 
 import com.divyanshu.knowledgehub.infrastructure.model.FetchedResource;
 import com.divyanshu.knowledgehub.application.port.out.Parser;
@@ -18,7 +18,7 @@ public class ParserImpl implements Parser {
     private static final Logger log = LoggerFactory.getLogger(ParserImpl.class);
 
     public String parse(FetchedResource resource) {
-        if (resource.getContentType().contains("text/html")) {
+        if (resource.getContentType().contains("html")) {
             log.info("Found the html content for sourceURL : {} ", resource.getSourceUrl());
             return htmlParser(resource);
         }

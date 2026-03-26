@@ -4,13 +4,16 @@ package com.divyanshu.knowledgehub.application.service;
 import com.divyanshu.knowledgehub.application.event.DocumentSavedEvent;
 import com.divyanshu.knowledgehub.application.port.out.DataRepository;
 import com.divyanshu.knowledgehub.application.port.out.Parser;
+import com.divyanshu.knowledgehub.application.port.out.Uploader;
 import com.divyanshu.knowledgehub.application.port.out.UrlContentFetcher;
 import com.divyanshu.knowledgehub.domain.model.Document;
 import com.divyanshu.knowledgehub.domain.model.DocumentType;
 import com.divyanshu.knowledgehub.infrastructure.model.FetchedResource;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -26,25 +29,30 @@ public class DataService {
     private final ApplicationEventPublisher eventPublisher;
     private final UrlContentFetcher urlContentFetcher;
     private final Parser parser;
+    private final Uploader uploader;
 
     public DataService(
             DataRepository dataRepository,
             ChunkingService chunkingService,
             ApplicationEventPublisher eventPublisher,
             UrlContentFetcher urlContentFetcher,
-            Parser parser
+            Parser parser,
+            Uploader uploader
     ) {
         this.dataRepository = dataRepository;
         this.chunkingService = chunkingService;
         this.eventPublisher = eventPublisher;
         this.urlContentFetcher = urlContentFetcher;
         this.parser = parser;
+        this.uploader = uploader;
     }
 
-    public Document saveData(String content, Document doc) {
+    public Document saveData(String content, Document doc, MultipartFile file) throws IOException {
         if (Objects.requireNonNull(doc.getDocumentType()) == DocumentType.LINK) {
             FetchedResource urlContent = urlContentFetcher.fetchUrlContent(doc.getSourceUrl());
             content = parser.parse(urlContent);
+        } else if (Objects.requireNonNull(doc.getDocumentType()) == DocumentType.PDF) {
+            content = parser.parse(new FetchedResource(file.getBytes(), "pdf", null, null));
         }
         List<String> chunks = chunkingService.getChunks(content);
         String contentHash = hashContent(content);
@@ -63,7 +71,7 @@ public class DataService {
         );
         Document savedDoc = dataRepository.save(docToBeSaved, chunks);
 
-        eventPublisher.publishEvent(new DocumentSavedEvent(savedDoc.getId()));
+        eventPublisher.publishEvent(new DocumentSavedEvent(savedDoc.getId(), file.getBytes()));
 
         return savedDoc;
     }

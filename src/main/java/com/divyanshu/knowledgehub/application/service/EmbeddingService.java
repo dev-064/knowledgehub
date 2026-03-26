@@ -3,6 +3,7 @@ package com.divyanshu.knowledgehub.application.service;
 import com.divyanshu.knowledgehub.application.event.DocumentSavedEvent;
 import com.divyanshu.knowledgehub.application.port.out.DataRepository;
 import com.divyanshu.knowledgehub.application.port.out.EmbeddingProvider;
+import com.divyanshu.knowledgehub.application.port.out.Uploader;
 import com.divyanshu.knowledgehub.domain.model.Chunks;
 import com.divyanshu.knowledgehub.domain.model.DocumentUploadStatus;
 import org.slf4j.Logger;
@@ -21,10 +22,12 @@ public class EmbeddingService {
 
     private final EmbeddingProvider embeddingProvider;
     private final DataRepository dataRepository;
+    private final Uploader uploader;
 
-    public EmbeddingService(EmbeddingProvider embeddingProvider, DataRepository dataRepository) {
+    public EmbeddingService(EmbeddingProvider embeddingProvider, DataRepository dataRepository, Uploader uploader) {
         this.embeddingProvider = embeddingProvider;
         this.dataRepository = dataRepository;
+        this.uploader = uploader;
     }
 
     @Async("embeddingTaskExecutor")
@@ -34,6 +37,8 @@ public class EmbeddingService {
         log.info("Starting embedding generation for document: {}", documentId);
 
         try {
+            uploader.upload(event.fileContent(), documentId.toString());
+
             List<Chunks> chunks = dataRepository.findChunksByDocumentId(documentId);
             if (chunks.isEmpty()) {
                 log.warn("No chunks found for document: {}", documentId);
