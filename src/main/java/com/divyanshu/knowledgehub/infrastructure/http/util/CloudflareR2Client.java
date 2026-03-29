@@ -1,5 +1,6 @@
 package com.divyanshu.knowledgehub.infrastructure.http.util;
 
+import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -13,6 +14,7 @@ import java.util.List;
 /**
  * Client for interacting with Cloudflare R2 Storage using AWS SDK S3 compatibility
  */
+@Component
 public class CloudflareR2Client {
     private final S3Client s3Client;
 

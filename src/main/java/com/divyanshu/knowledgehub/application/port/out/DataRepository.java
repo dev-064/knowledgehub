@@ -9,11 +9,13 @@ import java.util.UUID;
 
 public interface DataRepository {
 
-    Document save(Document doc, List<String> chunks);
+    Document save(Document doc);
+
+    List<Chunks> saveChunks(List<String> chunks, List<float[]> embeddings, UUID documentId);
 
     List<Chunks> findChunksByDocumentId(UUID documentId);
 
     void updateChunkEmbeddings(List<UUID> chunkIds, List<float[]> embeddings);
 
-    void updateDocumentStatus(UUID documentId, DocumentUploadStatus status);
+    void updateDocumentStatus(UUID documentId, DocumentUploadStatus status, String uploadedUrl);
 }

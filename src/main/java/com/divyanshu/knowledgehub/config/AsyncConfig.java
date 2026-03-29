@@ -15,15 +15,15 @@ public class AsyncConfig {
 
     private static final Logger log = LoggerFactory.getLogger(AsyncConfig.class);
 
-    @Bean(name = "embeddingTaskExecutor")
-    public Executor embeddingTaskExecutor() {
+    @Bean(name = "documentProcessor")
+    public Executor documentProcessor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(2);
         executor.setMaxPoolSize(4);
         executor.setQueueCapacity(50);
-        executor.setThreadNamePrefix("embedding-");
+        executor.setThreadNamePrefix("documentProcessor-");
         executor.setRejectedExecutionHandler((r, e) ->
-                log.error("Embedding task rejected — queue full"));
+                log.error("Document processor task rejected — queue full"));
         executor.initialize();
         return executor;
     }

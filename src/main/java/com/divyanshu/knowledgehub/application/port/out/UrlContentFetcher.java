@@ -1,7 +1,7 @@
 package com.divyanshu.knowledgehub.application.port.out;
 
-import com.divyanshu.knowledgehub.infrastructure.model.FetchedResource;
+import com.divyanshu.knowledgehub.infrastructure.model.ContentResource;
 
 public interface UrlContentFetcher {
-    FetchedResource fetchUrlContent(String sourceUrl);
+    ContentResource fetchUrlContent(String sourceUrl);
 }

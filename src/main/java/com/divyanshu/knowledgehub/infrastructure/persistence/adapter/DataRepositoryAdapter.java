@@ -47,7 +47,7 @@ public class DataRepositoryAdapter implements DataRepository {
 
     @Override
     @Transactional
-    public Document save(Document doc, List<String> chunks) {
+    public Document save(Document doc) {
         log.info("Saving document '{}' for workspaceId: {}", doc.getTitle(), doc.getWorkspaceId());
         try {
             WorkspaceEntity workspaceEntity = jpaWorkspaceRepository.findById(doc.getWorkspaceId())
@@ -70,6 +70,25 @@ public class DataRepositoryAdapter implements DataRepository {
             DocumentEntity savedDocument = jpaDataRepository.save(documentEntity);
             log.info("Document saved with id: {}", savedDocument.getId());
 
+            return mapToDomain(savedDocument);
+
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateEntityException(
+                    "Document already exists with contentHash: " + doc.getContentHash(), e);
+        } catch (DataAccessException e) {
+            throw new DatabaseException(
+                    "Database error while saving document: " + doc.getTitle(), e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<Chunks> saveChunks(List<String> chunks, List<float[]> embeddings, UUID documentId) {
+        log.info("Saving the chunks for the document ID : {}", documentId);
+        try {
+            // getReferenceById returns a proxy — avoids a redundant SELECT since we only need the FK reference
+            DocumentEntity doc = jpaDataRepository.getReferenceById(documentId);
+
             Instant now = Instant.now();
             List<ChunksEntity> chunkEntities = new ArrayList<>(chunks.size());
             for (int i = 0; i < chunks.size(); i++) {
@@ -78,24 +97,19 @@ public class DataRepositoryAdapter implements DataRepository {
                         chunkText.length() / 4,
                         chunkText,
                         i,
-                        new float[0],
-                        savedDocument,
+                        embeddings.get(i),
+                        doc,
                         now,
                         now
                 ));
             }
 
             List<ChunksEntity> savedChunks = jpaChunkRepository.saveAll(chunkEntities);
-            log.info("Saved {} chunks for documentId: {}", savedChunks.size(), savedDocument.getId());
+            log.info("Saved {} chunks for documentId: {}", savedChunks.size(), documentId);
 
-            return mapToDomain(savedDocument, savedChunks);
-
-        } catch (DataIntegrityViolationException e) {
-            throw new DuplicateEntityException(
-                    "Document already exists with contentHash: " + doc.getContentHash(), e);
+            return mapToDomain(savedChunks);
         } catch (DataAccessException e) {
-            throw new DatabaseException(
-                    "Database error while saving document: " + doc.getTitle(), e);
+            throw new DatabaseException("Error saving chunks for document: " + documentId, e);
         }
     }
 
@@ -148,7 +162,7 @@ public class DataRepositoryAdapter implements DataRepository {
 
     @Override
     @Transactional
-    public void updateDocumentStatus(UUID documentId, DocumentUploadStatus status) {
+    public void updateDocumentStatus(UUID documentId, DocumentUploadStatus status, String uploadedUrl) {
         log.info("Updating document {} status to {}", documentId, status);
         try {
             DocumentEntity doc = jpaDataRepository.findById(documentId)
@@ -156,6 +170,7 @@ public class DataRepositoryAdapter implements DataRepository {
                             "Document not found with id: " + documentId, null
                     ));
             doc.setStatus(status);
+            doc.setUploadedReference(uploadedUrl);
             doc.setUpdatedAt(Instant.now());
             jpaDataRepository.save(doc);
         } catch (DataAccessException e) {
@@ -163,19 +178,7 @@ public class DataRepositoryAdapter implements DataRepository {
         }
     }
 
-    private Document mapToDomain(DocumentEntity docEntity, List<ChunksEntity> chunkEntities) {
-        List<Chunks> chunks = chunkEntities.stream()
-                .map(c -> new Chunks(
-                        c.getId(),
-                        c.getTokenCount(),
-                        c.getChunkText(),
-                        c.getChunkIndex(),
-                        c.getEmbeddingVector(),
-                        c.getCreatedAt(),
-                        c.getUpdatedAt()
-                ))
-                .toList();
-
+    private Document mapToDomain(DocumentEntity docEntity) {
         return new Document(
                 docEntity.getId(),
                 docEntity.getWorkspaceId(),
@@ -187,7 +190,21 @@ public class DataRepositoryAdapter implements DataRepository {
                 docEntity.getStatus(),
                 docEntity.getCreatedAt(),
                 docEntity.getUpdatedAt(),
-                chunks
+                List.of()
         );
+    }
+
+    private List<Chunks> mapToDomain(List<ChunksEntity> chunkEntities) {
+        return chunkEntities.stream()
+                .map(c -> new Chunks(
+                        c.getId(),
+                        c.getTokenCount(),
+                        c.getChunkText(),
+                        c.getChunkIndex(),
+                        c.getEmbeddingVector(),
+                        c.getCreatedAt(),
+                        c.getUpdatedAt()
+                ))
+                .toList();
     }
 }

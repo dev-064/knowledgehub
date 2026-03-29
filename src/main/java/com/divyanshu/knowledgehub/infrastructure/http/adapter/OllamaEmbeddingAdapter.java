@@ -1,5 +1,6 @@
 package com.divyanshu.knowledgehub.infrastructure.http.adapter;
 
+import com.divyanshu.knowledgehub.application.exception.EmbeddingException;
 import com.divyanshu.knowledgehub.application.port.out.EmbeddingProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,6 +8,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -46,17 +49,29 @@ public class OllamaEmbeddingAdapter implements EmbeddingProvider {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-        ResponseEntity<OllamaEmbedResponse> response = httpRestTemplate.exchange(
-                url, HttpMethod.POST, request, OllamaEmbedResponse.class
-        );
+        try {
+            ResponseEntity<OllamaEmbedResponse> response = httpRestTemplate.exchange(
+                    url, HttpMethod.POST, request, OllamaEmbedResponse.class
+            );
 
-        OllamaEmbedResponse body = response.getBody();
-        if (body == null || body.embeddings() == null) {
-            throw new RuntimeException("Empty response from Ollama embedding API");
+            OllamaEmbedResponse body = response.getBody();
+            if (body == null || body.embeddings() == null) {
+                throw new EmbeddingException(
+                        "Embedding service returned an empty response for model '" + model + "'");
+            }
+            if (body.embeddings().size() != texts.size()) {
+                throw new EmbeddingException(String.format(
+                        "Embedding count mismatch: expected %d, got %d from model '%s'",
+                        texts.size(), body.embeddings().size(), model));
+            }
+
+            log.info("Received {} embeddings from Ollama", body.embeddings().size());
+            return body.embeddings();
+        } catch (ResourceAccessException e) {
+            throw new EmbeddingException("Embedding service is unreachable at: " + url, e);
+        } catch (RestClientException e) {
+            throw new EmbeddingException("Embedding service request failed for model '" + model + "'", e);
         }
-
-        log.info("Received {} embeddings from Ollama", body.embeddings().size());
-        return body.embeddings();
     }
 
     private record OllamaEmbedResponse(List<float[]> embeddings) {}

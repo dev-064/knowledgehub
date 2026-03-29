@@ -129,4 +129,6 @@ public class DocumentEntity {
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    public void setUploadedReference(String uploadedReference) {this.uploadedReference = uploadedReference;}
 }

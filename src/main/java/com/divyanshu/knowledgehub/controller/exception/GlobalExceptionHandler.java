@@ -1,7 +1,12 @@
 package com.divyanshu.knowledgehub.controller.exception;
 
 import com.divyanshu.knowledgehub.application.exception.ApplicationException;
+import com.divyanshu.knowledgehub.application.exception.ContentParsingException;
+import com.divyanshu.knowledgehub.application.exception.DocumentAlreadyExistsException;
+import com.divyanshu.knowledgehub.application.exception.EmbeddingException;
 import com.divyanshu.knowledgehub.application.exception.InvalidCredentialsException;
+import com.divyanshu.knowledgehub.application.exception.StorageException;
+import com.divyanshu.knowledgehub.application.exception.UrlFetchException;
 import com.divyanshu.knowledgehub.application.exception.UserAlreadyExistsException;
 import com.divyanshu.knowledgehub.application.exception.UserNotFoundException;
 import com.divyanshu.knowledgehub.application.exception.WorkspaceAlreadyExistsException;
@@ -148,11 +153,86 @@ public class GlobalExceptionHandler {
         log.warn("Duplicate entity: {} path={}", ex.getMessage(), request.getRequestURI());
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.CONFLICT.value(),
-                "DOCUMENT_ALREADY_EXISTS",
-                "A document with the same content already exists in this workspace.",
+                "DUPLICATE_ENTITY",
+                "A record with the same unique identifier already exists.",
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(DocumentAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleDocumentAlreadyExistsException(
+            DocumentAlreadyExistsException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Duplicate document: {} path={}", ex.getMessage(), request.getRequestURI());
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "DOCUMENT_ALREADY_EXISTS",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(UrlFetchException.class)
+    public ResponseEntity<ErrorResponse> handleUrlFetchException(
+            UrlFetchException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("URL fetch failed: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.BAD_GATEWAY.value(),
+                "URL_FETCH_FAILED",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(response);
+    }
+
+    @ExceptionHandler(ContentParsingException.class)
+    public ResponseEntity<ErrorResponse> handleContentParsingException(
+            ContentParsingException ex,
+            HttpServletRequest request
+    ) {
+        log.error("Content parsing failed: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                "CONTENT_PARSING_FAILED",
+                "Failed to parse the uploaded content. Ensure the file is a valid, non-corrupted document.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
+    }
+
+    @ExceptionHandler(EmbeddingException.class)
+    public ResponseEntity<ErrorResponse> handleEmbeddingException(
+            EmbeddingException ex,
+            HttpServletRequest request
+    ) {
+        log.error("Embedding service error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "EMBEDDING_SERVICE_UNAVAILABLE",
+                "The embedding service is currently unavailable. Please try again later.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
+
+    @ExceptionHandler(StorageException.class)
+    public ResponseEntity<ErrorResponse> handleStorageException(
+            StorageException ex,
+            HttpServletRequest request
+    ) {
+        log.error("Storage error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "STORAGE_SERVICE_UNAVAILABLE",
+                "The storage service is currently unavailable. Please try again later.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
@@ -243,7 +323,7 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
-        log.error("Unexpected error path={}", ex.getMessage(), ex);
+        log.error("Unexpected error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "UNEXPECTED_ERROR",

@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.beans.ConstructorProperties;
+
 public class SaveDataRequest {
 
     @NotBlank(message = "Title must not be blank")
@@ -37,6 +39,7 @@ public class SaveDataRequest {
         return sourceUrl.startsWith("http://") || sourceUrl.startsWith("https://");
     }
 
+    @ConstructorProperties({"title", "type", "content", "sourceUrl"})
     public SaveDataRequest(String title, DocumentType type, String content, String sourceUrl) {
         this.title = title;
         this.type = type;

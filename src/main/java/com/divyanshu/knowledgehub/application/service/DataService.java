@@ -2,13 +2,17 @@ package com.divyanshu.knowledgehub.application.service;
 
 
 import com.divyanshu.knowledgehub.application.event.DocumentSavedEvent;
+import com.divyanshu.knowledgehub.application.exception.ContentParsingException;
+import com.divyanshu.knowledgehub.application.exception.DocumentAlreadyExistsException;
+import com.divyanshu.knowledgehub.application.exception.WorkspaceNotFoundException;
 import com.divyanshu.knowledgehub.application.port.out.DataRepository;
-import com.divyanshu.knowledgehub.application.port.out.Parser;
-import com.divyanshu.knowledgehub.application.port.out.Uploader;
 import com.divyanshu.knowledgehub.application.port.out.UrlContentFetcher;
+import com.divyanshu.knowledgehub.domain.exception.InvalidDataException;
 import com.divyanshu.knowledgehub.domain.model.Document;
 import com.divyanshu.knowledgehub.domain.model.DocumentType;
-import com.divyanshu.knowledgehub.infrastructure.model.FetchedResource;
+import com.divyanshu.knowledgehub.infrastructure.model.ContentResource;
+import com.divyanshu.knowledgehub.infrastructure.persistence.exception.DuplicateEntityException;
+import com.divyanshu.knowledgehub.infrastructure.persistence.exception.EntityNotFoundException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,37 +29,40 @@ import java.util.Objects;
 public class DataService {
 
     private final DataRepository dataRepository;
-    private final ChunkingService chunkingService;
     private final ApplicationEventPublisher eventPublisher;
     private final UrlContentFetcher urlContentFetcher;
-    private final Parser parser;
-    private final Uploader uploader;
 
     public DataService(
             DataRepository dataRepository,
-            ChunkingService chunkingService,
             ApplicationEventPublisher eventPublisher,
-            UrlContentFetcher urlContentFetcher,
-            Parser parser,
-            Uploader uploader
+            UrlContentFetcher urlContentFetcher
     ) {
         this.dataRepository = dataRepository;
-        this.chunkingService = chunkingService;
         this.eventPublisher = eventPublisher;
         this.urlContentFetcher = urlContentFetcher;
-        this.parser = parser;
-        this.uploader = uploader;
     }
 
-    public Document saveData(String content, Document doc, MultipartFile file) throws IOException {
-        if (Objects.requireNonNull(doc.getDocumentType()) == DocumentType.LINK) {
-            FetchedResource urlContent = urlContentFetcher.fetchUrlContent(doc.getSourceUrl());
-            content = parser.parse(urlContent);
-        } else if (Objects.requireNonNull(doc.getDocumentType()) == DocumentType.PDF) {
-            content = parser.parse(new FetchedResource(file.getBytes(), "pdf", null, null));
+    public Document saveData(Object content, Document doc, MultipartFile file) {
+        DocumentType docType = Objects.requireNonNull(doc.getDocumentType());
+        ContentResource contentToBeProcessed;
+        if (docType == DocumentType.LINK) {
+            contentToBeProcessed = urlContentFetcher.fetchUrlContent(doc.getSourceUrl());
+        } else if (docType == DocumentType.PDF) {
+            if (file == null || file.isEmpty()) {
+                throw new InvalidDataException("A PDF file must be provided for document type PDF");
+            }
+            try {
+                contentToBeProcessed = new ContentResource(file.getBytes(), "pdf");
+            } catch (IOException e) {
+                throw new ContentParsingException("Failed to read uploaded PDF file", e);
+            }
+        } else if (docType == DocumentType.TEXT) {
+            contentToBeProcessed = new ContentResource(((String) content).getBytes(StandardCharsets.UTF_8), "text");
+        } else {
+            throw new InvalidDataException("Unsupported document type: " + docType);
         }
-        List<String> chunks = chunkingService.getChunks(content);
-        String contentHash = hashContent(content);
+
+        String contentHash = hashContent(contentToBeProcessed);
         Document docToBeSaved = new Document(
                 doc.getId(),
                 doc.getWorkspaceId(),
@@ -69,17 +76,24 @@ public class DataService {
                 doc.getUpdatedAt(),
                 List.of()
         );
-        Document savedDoc = dataRepository.save(docToBeSaved, chunks);
 
-        eventPublisher.publishEvent(new DocumentSavedEvent(savedDoc.getId(), file.getBytes()));
-
-        return savedDoc;
+        try {
+            Document savedDoc = dataRepository.save(docToBeSaved);
+            eventPublisher.publishEvent(new DocumentSavedEvent(savedDoc.getId(), contentToBeProcessed));
+            return savedDoc;
+        } catch (DuplicateEntityException e) {
+            throw new DocumentAlreadyExistsException(
+                    "A document with identical content already exists in workspace: " + doc.getWorkspaceId());
+        } catch (EntityNotFoundException e) {
+            // Workspace FK violation — surface as a clear workspace-not-found error
+            throw new WorkspaceNotFoundException(doc.getWorkspaceId());
+        }
     }
 
-    private String hashContent(String content) {
+    private String hashContent(ContentResource resource) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(content.getBytes(StandardCharsets.UTF_8));
+            byte[] hashBytes = digest.digest(resource.content());
             return HexFormat.of().formatHex(hashBytes);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 algorithm not available", e);
