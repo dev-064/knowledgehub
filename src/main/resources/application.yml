@@ -4,16 +4,18 @@ spring:
     username: postgres
     password: postgres
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
-    properties:
-      hibernate:
-        hbm2ddl:
-          import_files: init.sql
 
 ollama:
   base-url: http://localhost:11434
   embedding:
     model: nomic-embed-text
+  llm:
+    model: llama3.2

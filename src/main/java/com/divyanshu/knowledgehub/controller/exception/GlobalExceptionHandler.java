@@ -4,6 +4,7 @@ import com.divyanshu.knowledgehub.application.exception.ApplicationException;
 import com.divyanshu.knowledgehub.application.exception.ContentParsingException;
 import com.divyanshu.knowledgehub.application.exception.DocumentAlreadyExistsException;
 import com.divyanshu.knowledgehub.application.exception.EmbeddingException;
+import com.divyanshu.knowledgehub.application.exception.LlmException;
 import com.divyanshu.knowledgehub.application.exception.InvalidCredentialsException;
 import com.divyanshu.knowledgehub.application.exception.StorageException;
 import com.divyanshu.knowledgehub.application.exception.UrlFetchException;
@@ -215,6 +216,21 @@ public class GlobalExceptionHandler {
                 HttpStatus.SERVICE_UNAVAILABLE.value(),
                 "EMBEDDING_SERVICE_UNAVAILABLE",
                 "The embedding service is currently unavailable. Please try again later.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
+
+    @ExceptionHandler(LlmException.class)
+    public ResponseEntity<ErrorResponse> handleLlmException(
+            LlmException ex,
+            HttpServletRequest request
+    ) {
+        log.error("LLM service error: {} path={}", ex.getMessage(), request.getRequestURI(), ex);
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "LLM_SERVICE_UNAVAILABLE",
+                "The LLM service is currently unavailable. Please try again later.",
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);

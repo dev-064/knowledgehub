@@ -22,8 +22,42 @@ public class HttpClientConfig {
 
     private static final int CONNECT_TIMEOUT_SECONDS = 10;
     private static final int SOCKET_TIMEOUT_SECONDS = 30;
+    private static final int LLM_RESPONSE_TIMEOUT_SECONDS = 120;
     private static final int MAX_CONNECTION_TOTAL = 20;
     private static final int MAX_CONNECTION_PER_ROUTE = 5;
+
+    @Bean
+    public RestTemplate ollamaLlmRestTemplate() {
+        ConnectionConfig connectionConfig = ConnectionConfig.custom()
+                .setConnectTimeout(Timeout.ofSeconds(CONNECT_TIMEOUT_SECONDS))
+                .setSocketTimeout(Timeout.ofSeconds(LLM_RESPONSE_TIMEOUT_SECONDS))
+                .build();
+
+        HttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(
+                        SSLConnectionSocketFactoryBuilder.create()
+                                .setSslContext(SSLContexts.createSystemDefault())
+                                .build()
+                )
+                .setDefaultConnectionConfig(connectionConfig)
+                .setMaxConnTotal(MAX_CONNECTION_TOTAL)
+                .setMaxConnPerRoute(MAX_CONNECTION_PER_ROUTE)
+                .build();
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectionRequestTimeout(Timeout.ofSeconds(CONNECT_TIMEOUT_SECONDS))
+                .setResponseTimeout(Timeout.ofSeconds(LLM_RESPONSE_TIMEOUT_SECONDS))
+                .build();
+
+        HttpClient httpClient = HttpClientBuilder.create()
+                .setConnectionManager(connectionManager)
+                .setDefaultRequestConfig(requestConfig)
+                .evictExpiredConnections()
+                .build();
+
+        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
+        return new RestTemplate(new BufferingClientHttpRequestFactory(requestFactory));
+    }
 
     @Bean
     public RestTemplate httpRestTemplate() {

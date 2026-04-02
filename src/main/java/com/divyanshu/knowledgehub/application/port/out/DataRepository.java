@@ -18,4 +18,6 @@ public interface DataRepository {
     void updateChunkEmbeddings(List<UUID> chunkIds, List<float[]> embeddings);
 
     void updateDocumentStatus(UUID documentId, DocumentUploadStatus status, String uploadedUrl);
+
+    List<Document> findRelevantDocuments(float[] queryEmbeddings, UUID workspaceId);
 }

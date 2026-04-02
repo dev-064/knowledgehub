@@ -19,6 +19,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.divyanshu.knowledgehub.domain.model.DocumentType;
 import com.divyanshu.knowledgehub.domain.model.DocumentUploadStatus;
 
 import java.time.Instant;
@@ -68,6 +69,7 @@ public class DataRepositoryAdapter implements DataRepository {
             );
 
             DocumentEntity savedDocument = jpaDataRepository.save(documentEntity);
+            jpaDataRepository.flush();
             log.info("Document saved with id: {}", savedDocument.getId());
 
             return mapToDomain(savedDocument);
@@ -176,6 +178,56 @@ public class DataRepositoryAdapter implements DataRepository {
         } catch (DataAccessException e) {
             throw new DatabaseException("Error updating document status: " + documentId, e);
         }
+    }
+
+    @Override
+    public List<Document> findRelevantDocuments(float[] queryEmbeddings, UUID workspaceId) {
+        log.info("Finding relevant chunks for workspaceId: {} with similarity threshold 0.75", workspaceId);
+        try {
+            String vectorString = toVectorString(queryEmbeddings);
+            List<Object[]> rows = jpaChunkRepository.findByWorkspaceIdAboveSimilarityThreshold(
+                    vectorString, workspaceId, 0.75
+            );
+            log.info("Found {} chunks above similarity threshold for workspaceId: {}", rows.size(), workspaceId);
+            return rows.stream()
+                    .map(this::mapRowToDocument)
+                    .toList();
+        } catch (DataAccessException e) {
+            throw new DatabaseException("Error finding relevant documents for workspace: " + workspaceId, e);
+        }
+    }
+
+    private String toVectorString(float[] vector) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < vector.length; i++) {
+            sb.append(vector[i]);
+            if (i < vector.length - 1) sb.append(",");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    private Document mapRowToDocument(Object[] row) {
+        // chunk fields: row[0]=c.id, row[1]=c.chunk_text, row[2]=c.chunk_index
+        UUID chunkId = UUID.fromString(row[0].toString());
+        String chunkText = row[1] != null ? row[1].toString() : null;
+        Integer chunkIndex = row[2] != null ? ((Number) row[2]).intValue() : null;
+
+        // document fields: row[3..12]
+        UUID documentId = UUID.fromString(row[3].toString());
+        UUID workspaceId = UUID.fromString(row[4].toString());
+        String title = row[5] != null ? row[5].toString() : null;
+        String sourceUrl = row[6] != null ? row[6].toString() : null;
+        DocumentType type = row[7] != null ? DocumentType.valueOf(row[7].toString()) : null;
+        String contentHash = row[8] != null ? row[8].toString() : null;
+        String uploadedReference = row[9] != null ? row[9].toString() : null;
+        DocumentUploadStatus status = row[10] != null ? DocumentUploadStatus.valueOf(row[10].toString()) : null;
+        Instant createdAt = row[11] != null ? ((java.sql.Timestamp) row[11]).toInstant() : null;
+        Instant updatedAt = row[12] != null ? ((java.sql.Timestamp) row[12]).toInstant() : null;
+
+        Chunks matchingChunk = new Chunks(chunkId, null, chunkText, chunkIndex, null, createdAt, updatedAt);
+
+        return new Document(documentId, workspaceId, title, sourceUrl, type, contentHash, uploadedReference, status, createdAt, updatedAt, List.of(matchingChunk));
     }
 
     private Document mapToDomain(DocumentEntity docEntity) {
